@@ -1,0 +1,125 @@
+﻿@using Microsoft.AspNetCore.Components.Authorization
+@inject AuthenticationStateProvider AuthStateProvider
+@page "/identity/account/login"
+
+@using Syncfusion.Blazor.Popups
+
+@layout AuthenticationLayout
+<div class="container">
+    <div class="row">
+        <div class="col-lg-5"></div>
+
+        <div class="col-lg-2" style="width:350px">
+
+            <EditForm Enhance Model="User" OnValidSubmit="HandleLogin">
+                 <DataAnnotationsValidator />
+                 <div class="card bg-dark" style="opacity:0.5; margin-top:15%; border-radius:10px; color:white; font-weight:bold">
+                     <div class="card-header text-center fs-5 mb-2">Login</div>
+                     <div class="container">
+                         <div class="row">
+                             <div class="col-lg-4 col-md-4 col-sm-4"></div>
+                             <div class="col-lg-4 col-md-4 col-sm-4 d-flex justify-content-center">
+                                 <img style="border-radius:20px" src="Images/CompanyLogos/LogoCompany.jpg" height="50" width="50" />
+                             </div>
+
+                         </div>
+                     </div>
+                     <div class="card-body">
+                         <div class="form-group mt-3">
+                             <label class="form-label">
+                                 Email
+                             </label>
+                             <InputText @bind-Value="User.Email" class="form-control"></InputText>
+                         </div>
+                         <div class="form-group mt-3">
+                             <label class="form-label">
+                                 Password
+                             </label>
+                             <input type="password" @bind="User.Password" class="form-control"></input>
+                         </div>
+                         <div class="form-group mt-3">
+
+
+                             @if (ShowLoadingButton)
+                            {
+
+                                <ButtonLoadingSpinner></ButtonLoadingSpinner>
+                            }
+                            else
+                            {
+                                <button class="btn btn-outline-primary float-end" type="submit">Login</button>
+
+                                
+                            }
+
+
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <span class="text-center">
+                            Don't have account ? |
+                            <a class="btn-link" href="/identity/account/register"> Sign Up</a>
+
+                        </span>
+                        <ValidationSummary />
+
+                    </div>
+
+                </div>
+            </EditForm>
+        </div>
+
+    </div>
+
+
+</div>
+
+@code {
+    public bool ShowLoadingButton { get; set; } = false;
+
+    Login User = new();
+    [CascadingParameter]public Task<AuthenticationState> AuthenticationState { get; set; }
+
+    protected async override Task OnInitializedAsync()
+    {
+        await ChekUserAuthentication();
+    }
+
+
+
+    async Task HandleLogin()
+    {
+        ShowLoadingButton = true;
+        var res = await accountService.SignInAsync(User);
+        if (res.Flaag)
+        {
+            await DisplayDialog(res.Message, "Login Success");
+            var customAuthStateProvider = (CustomAuthenticationStateProvider)AuthStateProvider;
+            await customAuthStateProvider.UpdateAuthenticationState(new UserSession()
+                {
+                    Token = res.Token,
+                    RefreshToken = res.RefreshToken
+                });
+            NavManager.NavigateTo("/", forceLoad: true);
+        }
+
+        else
+        {
+            await DisplayDialog(res.Message, "Alert");
+        }
+        ShowLoadingButton = false;
+
+    }
+    private async Task DisplayDialog(string content , string title)
+    {
+        await dialogService.AlertAsync(content, title);
+    }
+
+    private async Task ChekUserAuthentication()
+    {
+        var user = (await AuthenticationState).User;
+        bool isUserAuthenticated = user.Identity!.IsAuthenticated;
+        if (!isUserAuthenticated)
+            NavManager.NavigateTo("/home/dashboard");
+    }
+}

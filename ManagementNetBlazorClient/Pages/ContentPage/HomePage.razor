@@ -1,0 +1,24 @@
+﻿@page "/home/dashboard"
+@layout MainLayout
+@using ManagementNetBlazorClient.Pages.AdministrationPages;
+@using ManagementNetBlazorClient.Pages.ContentPage.DepartmentPages;
+
+
+<TableBanner/>
+<GeneralDepartmentPage/>
+@code {
+    [CascadingParameter] public Task<AuthenticationState> AuthenticationState { get; set; }
+    protected async override Task OnInitializedAsync()
+    {
+        await ChekUserAuthentication();
+    }
+
+    private async Task ChekUserAuthentication()
+    {
+        var user = (await AuthenticationState).User;
+        bool isUserAuthenticated = user.Identity!.IsAuthenticated;
+        if (!isUserAuthenticated)
+            NavManager.NavigateTo("/identity/account/login");
+    }
+
+}
